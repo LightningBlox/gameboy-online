@@ -18,7 +18,16 @@ function guiInitialize() {
 			}
 			return false;
 		});
-	})
+	});
+	
+	$("#scale-choices .scale").click(function() {
+		var scale = { "1x": 1, "2x": 2, "4x": 4 }[$(this).text()];
+		$("#scale-choices .scale").css("font-weight", "normal");
+		$(this).css("font-weight", "bold");
+		
+		$("#gfx").width(160 * scale);
+		$("#gfx").height(144 * scale);
+	});
 	
 	try {
 		//Hook the GUI controls.
@@ -254,6 +263,7 @@ function registerGUIEvents() {
 	addEvent("click", document.getElementById("typed_arrays_disallow"), function () {
 		settings[22] = document.getElementById("typed_arrays_disallow").checked;
 	});
+	
 	$("#view_fullscreen").click(fullscreenPlayer);
 	
 	addEvent("mouseup", document.getElementById("gfx"), onResizeOutput);
