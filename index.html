@@ -1,19 +1,10 @@
 <!DOCTYPE html>
-<html manifest="gameboy.manifest">
+<html>
 	<head>
-		<meta charset="utf-8">
-		
-		<title>GameBoy Online</title>
-		
-		<meta name="viewport" content="initial-scale=1.0;width=640;user-scalable=no;">
-		
-		<link rel="stylesheet" href="style.css">
-		
 		<script>
 			DEBUG_MESSAGES = true;
 			DEBUG_WINDOWING = false;
 		</script>
-		<script src="js/lib/windowStack.js"></script>
 		<script src="js/lib/opacity.js"></script>
 		<script src="js/lib/BMPCanvas.js"></script>
 		<script src="js/lib/base64.js"></script>
@@ -21,37 +12,202 @@
 		<script src="js/lib/waveAudio.js"></script>
 		<script src="js/lib/audioRunner.js"></script>
 		<script src="js/lib/json2.js"></script>
+		<script src="js/lib/jquery-1.4.4.min.js"></script>
 		<script src="js/GameBoyCore.js"></script>
 		<script src="js/GameBoyIO.js"></script>
 		<script src="js/terminal.js"></script>
 		<script src="js/gui.js"></script>
+		<script>$(function() {
+			$(".next-toggler").each(function() {
+				var symbol = $(this);
+				var heading = symbol.parent();
+				var next = heading.next();
+				
+				heading.css("cursor", "pointer");
+				
+				heading.click(function() {
+					if(symbol.text() == "[+]") {
+						symbol.text("[-]");
+						next.show(100);
+					} else {
+						symbol.text("[+]");
+						next.hide(100);
+					}
+					return false;
+				});
+			})
+		})</script>
+		<style>
+			html {
+				background: rgb(200, 225, 225);
+				text-align: center;
+				font-family: sans-serif;
+			}
+		
+			.gfx {
+				width: 320px;
+				height: 288px;
+				background: gray;
+				margin: 0 auto;
+			}
+		
+			.column {
+				width: 26em; 
+				margin: 0 auto;
+				margin-bottom: 15em;
+				overflow: visible;
+				text-align: left;
+			}
+		
+			.option {
+				text-align: center;
+				background: #222;
+				color: #FFF;
+				width: 320px;
+				margin: 0 auto;
+			}
+		
+			.legend {
+				width: 20%;
+				float: left;
+				padding: .25em 0;
+			}
+		
+			.options {
+				margin: 0;
+				padding: 0;
+				list-style-type: none;
+			}
+		
+			.options li {
+				padding: .25em 0;
+				display: block;
+				float: left;
+				width: 20%;
+				cursor: pointer;
+			}
+		
+			.options li.selected {
+				font-weight: bold;
+			}
+		
+			.options li:hover {
+				background: #333;
+			}
+		
+			.clear {
+				clear: both;
+			}
+		
+			.next-toggler {
+				font-weight: normal;
+				font-family: monospace;
+				color: #888;
+			}
+			
+			h2 {
+				font-size: 125%;
+			}
+			
+			h3 {
+				font-size: 100%;
+				margin-bottom: 0;
+				margin-top: .25em;
+			}
+			
+			.boolean-settings {
+				padding: 0;
+				list-style-type: none;
+			}
+			
+			#terminal_output {
+				background: black;
+				color: white;
+				height: 15em;
+				overflow: auto;
+				font-family: monospace;
+			}
+			
+			.load-options {
+				list-style-type: none;
+			}
+			
+			.load-options li {
+				margin-bottom: .25em;
+			}
+		</style>
 	</head>
 	<body>
-		<div id="GameBoy" class="window">
-			<div class="menubar">
-				<span id="GameBoy_file_menu">File</span>
-				<span id="GameBoy_settings_menu">Settings</span>
-				<span id="GameBoy_view_menu">View</span>
-				<span id="GameBoy_about_menu">About</span>
-			</div>
-			<div id="gfx">
-				<canvas></canvas>
-				<div id="canvasAltContainer"></div>
-				<span id="title">GameBoy</span> <span id="port_title">Online</span>
-			</div>
+		<h1>GameBoy Online</h1>
+		
+		<noscript>
+			<p style="font-weight: bold; text-align: center; color: red;">
+				Error: JavaScript required but unavailable. Your browser either lacks or has disabled support.
+			</p>
+		</noscript>
+		
+		<div class="gfx">
+			<canvas></canvas>
+			<div id="canvasAltContainer"></div>
 		</div>
-		<div id="terminal" class="window">
-			<div id="terminal_output"></div>
-				<div class="button_rack">
-					<button id="terminal_clear_button" class="left">Clear Messages</button>
-					<button id="terminal_close_button" class="right">Close Terminal</button>
-				</div>
+		
+		<div class="option">
+			<div class="legend">Scale:</div>
+			
+			<ul class="options">
+				<li id="scale-1">1x</li>
+				<li id="scale-2" class="selected">2x</li>
+				<li id="scale-4">4x</li>
+				<li id="scale-f" id="view_fullscreen">FS</li>
+			</ul>
+			<div class="clear"></div>
+		</div>
+		
+		<div class="column">
+			<h2>
+				<span class="next-toggler">[-]</span> Load ROM
+			</h2>
+			
+			<ul class="load-options">
+				<li>
+					<strong>Local File:</strong> <input type="file" id="local_file_open">
+				</li>
+				<li>
+					<strong>Remote URL:</strong> <button id="external_file_clicker">Select...</button>
+				</li>
+				<li>
+					<strong>Base64 String:</strong> <button id="data_uri_clicker">Select...</button>
+				</li>
+			</ul>
+			
+			<h2>
+				<span class="next-toggler">[-]</span> Manage
+			</h2>
+			
+			<div align=center>
+				<button id="save_state_clicker">Save State</button>
+				<button id="cpu_toggle_clicker">Pause</button>
+				<button id="restart_cpu_clicker">Restart</button>
 			</div>
-		<div id="about" class="window">
-			<div id="about_message">
-				<h1>
-					GameBoy Online
-				</h1>
+			
+			<h2>
+				<span class="next-toggler">[-]</span> Controls
+			</h2>
+			
+			<ul>
+				<li>X is A</li>
+				<li>Z is B</li>
+				<li>Shift is Select</li>
+				<li>Enter is Start</li>
+				<li>Arrows are D-Pad</li>
+				<li>ESC Toggles Fullscreen</li>
+			</ul>
+			
+			<h2>
+				<span class="next-toggler">[+]</span> About
+			</h2>
+			
+			<div style="display: none;">
 				<p>
 					This is a GameBoy Color emulator written in JavaScript, with small portions of code ported from MeBoy.
 				</p>
@@ -65,116 +221,77 @@
 					Save states are implemented through the window.localStorage object, and are serialized/deserialized through JSON. In order for save states to work properly on most browsers, you need set the maximum size limit for DOM storage higher, to meet the needs of the emulator's save data size.
 				</p>
 				<p>
-					For the reference below, this site is not affiliated with it , nor endorses any actions by it. Please note that downloading and obtaining GameBoy and GameBoy Color rom files may entail illegal activities, and as such are not endorsed and are done at your own risk.
+					For the reference below, this site is not affiliated with it , nor endorses any actions by it. Please note that downloading and obtaining GameBoy and GameBoy Color ROM files may entail illegal activities, and as such are not endorsed and are done at your own risk.
 				</p>
 				<p>
 					For more information about MeBoy and its source code, visit <a href="http://arktos.se/meboy/" target="_blank">http://arktos.se/meboy/</a>.
 				</p>
 			</div>
-			<div class="button_rack">
-				<button id="about_close_button" class="center">Close Popup</button>
-			</div>
-		</div>
-		<div class="window" id="settings">
-			<div id="toggle_settings">
-				<div class="setting">
-					<span>Enable Sound  (Experimental):</span>
-					<input type="checkbox" checked id="enable_sound">
+			
+			<h2>
+				<span class="next-toggler">[+]</span> Advanced Settings
+			</h2>
+			
+			<ul class="boolean-settings" style="display: none;">
+				<li>
+					<input type="checkbox" name="enable_sound" id="enable_sound">
+					<label for="enable_sound">Enable Sound (Experimental)</label>
+				</li>
+				<li>
+					<input type="checkbox" name="enable_mono_sound" id="enable_mono_sound">
+					<label for="enable_mono_sound">Force Mono Sound</label>
+				</li>
+				<li>
+					<input type="checkbox" name="disable_colors" id="disable_colors">
+					<label for="disable_colors">Prioritize GB Mode Over GBC Mode</label>
+				</li>
+				<li>
+					<input type="checkbox" name="enable_gbc_bios" id="enable_gbc_bios">
+					<label for="enable_gbc_bios">Use GBC BIOS (Overrides Previous Option)</label>
+				</li>
+				<li>
+					<input type="checkbox" name="bmp_method" id="bmp_method">
+					<label for="bmp_method">Prioritize Data URI BMP Over Canvas</label>
+				</li>
+				<li>
+					<input type="checkbox" name="auto_frameskip" id="auto_frameskip">
+					<label for="auto_frameskip">Auto Frame Skip</label>
+				</li>
+				<li>
+					<input type="checkbox" name="rom_only_override" id="rom_only_override">
+					<label for="rom_only_override">Override ROM Only Cartridge Typing to MBC1</label>
+				</li>
+				<li>
+					<input type="checkbox" name="mbc_enable_override" id="mbc_enable_override">
+					<label for="mbc_enable_override">Always Allow Reading and Writing to the MBC Banks</label>
+				</li>
+				<li>
+					<input type="checkbox" name="enable_colorization" id="enable_colorization">
+					<label for="enable_colorization">Colorize Classic GameBoy Palettes</label>
+				</li>
+				<li>
+					<input type="checkbox" name="do_minimal" id="do_minimal">
+					<label for="do_minimal">Minimal View on Fullscreen</label>
+				</li>
+				<li>
+					<input type="checkbox" name="software_resizing" id="software_resizing">
+					<label for="software_resizing">Resize Canvas Directly in JavaScript</label>
+				</li>
+				<li>
+					<input type="checkbox" name="typed_arrays_disallow" id="typed_arrays_disallow">
+					<label for="typed_arrays_disallow">Disallow Use of Typed Arrays</label>
+				</li>
+			</ul>
+			
+			<h2>
+				<span class="next-toggler">[+]</span> Debug Terminal
+			</h2>
+			
+			<div style="display: none;">
+				<div id="terminal_output"></div>
+				<div style="text-align: center;">
+					<button id="terminal_clear_button">Clear</button>
 				</div>
-				<div class="setting">
-					<span>Force Mono Sound:</span>
-					<input type="checkbox" id="enable_mono_sound">
-				</div>
-				<div class="setting">
-					<span>GB mode has priority over GBC mode:</span>
-					<input type="checkbox" id="disable_colors">
-				</div>
-				<div class="setting">
-					<span>Use GBC BIOS (Note: Overrides GB priority):</span>
-					<input type="checkbox" checked id="enable_gbc_bios">
-				</div>
-				<div class="setting">
-					<span>The data URI BMP method has priority over the canvas tag method:</span>
-					<input type="checkbox" id="bmp_method">
-				</div>
-				<div class="setting">
-					<span>Auto frame skip:</span>
-					<input type="checkbox" id="auto_frameskip" checked>
-				</div>
-				<div class="setting">
-					<span>Override ROM only cartridge typing to MBC1:</span>
-					<input type="checkbox" checked id="rom_only_override">
-				</div>
-				<div class="setting">
-					<span>Always allow reading and writing to the MBC banks:</span>
-					<input type="checkbox" checked id="mbc_enable_override">
-				</div>
-				<div class="setting">
-					<span>Colorize Classic GameBoy Palettes:</span>
-					<input type="checkbox" checked id="enable_colorization">
-				</div>
-				<div class="setting">
-					<span>Minimal view on fullscreen:</span>
-					<input type="checkbox" checked id="do_minimal">
-				</div>
-				<div class="setting">
-					<span>Resize canvas directly in JavaScript:</span>
-					<input type="checkbox" id="software_resizing">
-				</div>
-				<div class="setting">
-					<span>Disallow typed arrays to be used:</span>
-					<input type="checkbox" id="typed_arrays_disallow">
-				</div>
-			</div>
-			<div class="button_rack">
-				<button id="settings_close_button" class="center">Close Settings</button>
-			</div>
-		</div>
-		<ul class="menu" id="GameBoy_file_popup">
-			<li>
-				Open As
-				<ul class="menu">
-					<li id="data_uri_clicker">Base 64 Encoding</li>
-					<li id="external_file_clicker">URL Address</li>
-					<li id="internal_file_clicker">Local File</li>
-					<li id="open_saved_clicker">Saved State
-						<ul id="save_states" class="menu">
-						</ul>
-					</li>
-				</ul>
-			</li>
-			<li id="save_state_clicker">Save State</li>
-			<li id="restart_cpu_clicker">Restart</li>
-			<li id="run_cpu_clicker">Resume</li>
-			<li id="kill_cpu_clicker">Pause</li>
-		</ul>
-		<ul class="menu" id="GameBoy_view_popup">
-			<li id="view_terminal">Terminal</li>
-			<li id="view_instructions">Instructions</li>
-			<li id="view_fullscreen">Fullscreen Mode</li>
-		</ul>
-		<div id="input_select" class="window">
-			<form>
-				<input type="file" id="local_file_open">
-			</form>
-			<div class="button_rack">
-				<button id="input_select_close_button" class="center">Close File Input</button>
-			</div>
-		</div>
-		<div id="instructions" class="window">
-			<div id="keycodes">
-				<h1>Keyboard Controls:</h1>
-				<ul>
-					<li>X is A.</li>
-					<li>Z is B.</li>
-					<li>Shift is Select.</li>
-					<li>Enter is Start.</li>
-					<li>The d-pad is the control pad.</li>
-					<li>The escape key (esc) allows you to get in and out of fullscreen mode.</li>
-				</ul>
-			</div>
-			<div class="button_rack">
-				<button id="instructions_close_button" class="center">Close Instructions</button>
 			</div>
 		</div>
 		<div id="fullscreenContainer">
@@ -182,11 +299,10 @@
 		</div>
 		<script>
 			try {
-				addEvent("DOMContentLoaded", document, windowingPreInitUnsafe);
-				addEvent("readystatechange", document, windowingPreInitSafe);
-				addEvent("load", document, windowingPreInitUnsafe);
-			}
-			catch (error) {
+				addEvent("DOMContentLoaded", document, guiPreInitUnsafe);
+				addEvent("readystatechange", document, guiPreInitSafe);
+				addEvent("load", document, guiPreInitUnsafe);
+			} catch (error) {
 				alert("Could not initialize the emulator properly. Please try using a standards compliant browser.");
 			}
 		</script>

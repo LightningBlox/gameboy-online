@@ -1,31 +1,23 @@
-var windowingInitialized = false;
 var inFullscreen = false;
-function windowingPreInitUnsafe() {
-	if (!windowingInitialized) {
-		windowingInitialized = true;
-		windowingInitialize();
+var guiInitialized = false;
+function guiPreInitUnsafe() {
+	if (!guiInitialized) {
+		guiInitialized = true;
+		guiInitialize();
 	}
 }
-function windowingPreInitSafe() {
+function guiPreInitSafe() {
 	if (typeof document.readyState == "undefined" || document.readyState == "complete") {
-		windowingPreInitUnsafe();
+		guiPreInitUnsafe();
 	}
 }
-function windowingInitUnload() {
-	cout("In windowingInitUnload() : Unregistering window loading events.", 0);
-	removeEvent("DOMContentLoaded", document, windowingPreInitUnsafe);
-	removeEvent("readystatechange", document, windowingPreInitSafe);
-	removeEvent("load", document, windowingPreInitUnsafe);
+function guiInitUnload() {
+	cout("In guiInitUnload() : Unregistering window loading events.", 0);
+	removeEvent("DOMContentLoaded", document, guiPreInitUnsafe);
+	removeEvent("readystatechange", document, guiPreInitSafe);
+	removeEvent("load", document, guiPreInitUnsafe);
 }
-function windowingInitialize() {
-	cout("windowingInitialize() called.", 0);
-	windowingInitUnload();
-	windowStacks[0] = windowCreate("GameBoy", true);
-	windowStacks[1] = windowCreate("terminal", false);
-	windowStacks[2] = windowCreate("about", false);
-	windowStacks[3] = windowCreate("settings", false);
-	windowStacks[4] = windowCreate("input_select", false);
-	windowStacks[5] = windowCreate("instructions", false);
+function guiInitialize() {
 	try {
 		//Hook the GUI controls.
 		registerGUIEvents();
@@ -33,7 +25,7 @@ function windowingInitialize() {
 		loadSaveStates();
 	}
 	catch (error) {
-		cout("Fatal windowing error: \"" + error.message + "\" file:" + error.fileName + " line: " + error.lineNumber, 2);
+		cout("Fatal gui error: \"" + error.message + "\" file:" + error.fileName + " line: " + error.lineNumber, 2);
 	}
 	try {
 		try {
@@ -69,14 +61,9 @@ function windowingInitialize() {
 }
 function registerGUIEvents() {
 	cout("In registerGUIEvents() : Registering GUI Events.", -1);
-	addEvent("click", document.getElementById("terminal_clear_button"), clear_terminal);
-	addEvent("click", document.getElementById("terminal_close_button"), function () { windowStacks[1].hide() });
-	addEvent("click", document.getElementById("about_close_button"), function () { windowStacks[2].hide() });
-	addEvent("click", document.getElementById("settings_close_button"), function () { windowStacks[3].hide() });
-	addEvent("click", document.getElementById("input_select_close_button"), function () { windowStacks[4].hide() });
-	addEvent("click", document.getElementById("instructions_close_button"), function () { windowStacks[5].hide() });
-	addEvent("click", document.getElementById("GameBoy_about_menu"), function () { windowStacks[2].show() });
-	addEvent("click", document.getElementById("GameBoy_settings_menu"), function () { windowStacks[3].show() });
+	
+	$("#terminal_clear_button").click(clear_terminal);
+	
 	addEvent("keydown", document, function (event) {
 		if (event.keyCode == 27) {
 			//Fullscreen on/off
@@ -87,10 +74,11 @@ function registerGUIEvents() {
 			GameBoyKeyDown(event);
 		}
 	});
+	
 	addEvent("keyup", document, GameBoyKeyUp);
 	//addEvent("MozOrientation", window, GameBoyJoyStickSignalHandler);
-	new popupMenu(document.getElementById("GameBoy_file_menu"), document.getElementById("GameBoy_file_popup"));
-	addEvent("click", document.getElementById("data_uri_clicker"), function () {
+	
+	$("#data_uri_clicker").click(function () {
 		var datauri = prompt("Please input the ROM image's Base 64 Encoded Text:", "");
 		if (datauri != null && datauri.length > 0) {
 			try {
@@ -103,7 +91,8 @@ function registerGUIEvents() {
 			}
 		}
 	});
-	addEvent("click", document.getElementById("external_file_clicker"), function () {
+	
+	$("#external_file_clicker").click(function () {
 		var address = prompt("Please input the ROM image's URL:", "");
 		if (address != null && address.length > 0) {
 			try {
@@ -133,16 +122,8 @@ function registerGUIEvents() {
 			}
 		}
 	});
-	addEvent("click", document.getElementById("internal_file_clicker"), function () {
-		var file_opener = document.getElementById("local_file_open");
-		windowStacks[4].show();
-		file_opener.click();
-	});
-	addEvent("blur", document.getElementById("input_select"), function () {
-		windowStacks[4].hide();
-	});
+	
 	addEvent("change", document.getElementById("local_file_open"), function () {
-		windowStacks[4].hide();
 		if (typeof this.files != "undefined") {
 			try {
 				if (this.files.length >= 1) {
@@ -213,12 +194,15 @@ function registerGUIEvents() {
 			cout("Could not restart, as a previous emulation session could not be found.", 1);
 		}
 	});
-	addEvent("click", document.getElementById("run_cpu_clicker"), function () {
-		run();
-	});
-	addEvent("click", document.getElementById("kill_cpu_clicker"), function () {
+	
+	$("#cpu_toggle_clicker").toggle(function() {
 		pause();
+		$(this).text("Run");
+	}, function() {
+		run();
+		$(this).text("Pause");
 	});
+	
 	addEvent("click", document.getElementById("save_state_clicker"), function () {
 		save();
 	});
@@ -275,8 +259,6 @@ function registerGUIEvents() {
 	});
 	addEvent("click", document.getElementById("view_fullscreen"), fullscreenPlayer);
 	new popupMenu(document.getElementById("GameBoy_view_menu"), document.getElementById("GameBoy_view_popup"));
-	addEvent("click", document.getElementById("view_terminal"), function () { windowStacks[1].show() });
-	addEvent("click", document.getElementById("view_instructions"), function () { windowStacks[5].show() });
 	addEvent("mouseup", document.getElementById("gfx"), onResizeOutput);
 	addEvent("resize", window, onResizeOutput);
 }
@@ -318,12 +300,10 @@ function fullscreenPlayer() {
 			gameboy.canvas = document.getElementById("fullscreen");
 			document.getElementById("fullscreen").className = (settings[19]) ? "minimum" : "maximum";
 			document.getElementById("fullscreenContainer").style.display = "block";
-			windowStacks[0].hide();
 		}
 		else {
 			gameboy.canvas = document.getElementsByTagName("canvas")[0];
 			document.getElementById("fullscreenContainer").style.display = "none";
-			windowStacks[0].show();
 		}
 		initNewCanvasSize();
 		gameboy.initLCD();
