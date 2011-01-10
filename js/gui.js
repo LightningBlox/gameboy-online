@@ -1,23 +1,25 @@
 var inFullscreen = false;
-var guiInitialized = false;
-function guiPreInitUnsafe() {
-	if (!guiInitialized) {
-		guiInitialized = true;
-		guiInitialize();
-	}
-}
-function guiPreInitSafe() {
-	if (typeof document.readyState == "undefined" || document.readyState == "complete") {
-		guiPreInitUnsafe();
-	}
-}
-function guiInitUnload() {
-	cout("In guiInitUnload() : Unregistering window loading events.", 0);
-	removeEvent("DOMContentLoaded", document, guiPreInitUnsafe);
-	removeEvent("readystatechange", document, guiPreInitSafe);
-	removeEvent("load", document, guiPreInitUnsafe);
-}
+
 function guiInitialize() {
+	$(".next-toggler").each(function() {
+		var symbol = $(this);
+		var heading = symbol.parent();
+		var next = heading.next();
+	
+		heading.css("cursor", "pointer");
+	
+		heading.click(function() {
+			if(symbol.text() == "[+]") {
+				symbol.text("[-]");
+				next.show(100);
+			} else {
+				symbol.text("[+]");
+				next.hide(100);
+			}
+			return false;
+		});
+	})
+	
 	try {
 		//Hook the GUI controls.
 		registerGUIEvents();
@@ -55,7 +57,6 @@ function guiInitialize() {
 	document.getElementById("mbc_enable_override").checked = settings[10];
 	document.getElementById("enable_gbc_bios").checked = settings[16];
 	document.getElementById("enable_colorization").checked = settings[17];
-	document.getElementById("do_minimal").checked = settings[19];
 	document.getElementById("software_resizing").checked = settings[21];
 	document.getElementById("typed_arrays_disallow").checked = settings[22];
 }
@@ -64,7 +65,7 @@ function registerGUIEvents() {
 	
 	$("#terminal_clear_button").click(clear_terminal);
 	
-	addEvent("keydown", document, function (event) {
+	$(document).keydown(function (event) {
 		if (event.keyCode == 27) {
 			//Fullscreen on/off
 			fullscreenPlayer();
@@ -75,8 +76,8 @@ function registerGUIEvents() {
 		}
 	});
 	
-	addEvent("keyup", document, GameBoyKeyUp);
-	//addEvent("MozOrientation", window, GameBoyJoyStickSignalHandler);
+	$(document).keyup(GameBoyKeyUp);
+	//$(window).bind("MozOrientation", GameBoyJoyStickSignalHandler);
 	
 	$("#data_uri_clicker").click(function () {
 		var datauri = prompt("Please input the ROM image's Base 64 Encoded Text:", "");
@@ -123,7 +124,7 @@ function registerGUIEvents() {
 		}
 	});
 	
-	addEvent("change", document.getElementById("local_file_open"), function () {
+	$("#local_file_open").change(function () {
 		if (typeof this.files != "undefined") {
 			try {
 				if (this.files.length >= 1) {
@@ -174,7 +175,8 @@ function registerGUIEvents() {
 			cout("could not find the handle on the file to open.", 2);
 		}
 	});
-	addEvent("click", document.getElementById("restart_cpu_clicker"), function () {
+	
+	$("#restart_cpu_clicker").click(function () {
 		if (typeof gameboy == "object" && gameboy != null && typeof gameboy.ROMImage == "string") {
 			try {
 				if (!gameboy.fromSaveState) {
@@ -197,15 +199,14 @@ function registerGUIEvents() {
 	
 	$("#cpu_toggle_clicker").toggle(function() {
 		pause();
-		$(this).text("Run");
+		$(this).text("Resume");
 	}, function() {
 		run();
 		$(this).text("Pause");
 	});
 	
-	addEvent("click", document.getElementById("save_state_clicker"), function () {
-		save();
-	});
+	$("#save_state_clicker").click(save);
+	
 	addEvent("click", document.getElementById("enable_sound"), function () {
 		settings[0] = document.getElementById("enable_sound").checked;
 		if (typeof gameboy == "object" && gameboy != null) {
@@ -243,10 +244,6 @@ function registerGUIEvents() {
 			gameboy.checkPaletteType();
 		}
 	});
-	addEvent("click", document.getElementById("do_minimal"), function () {
-		settings[19] = document.getElementById("do_minimal").checked;
-		document.getElementById("fullscreen").className = (settings[19]) ? "minimum" : "maximum";
-	});
 	addEvent("click", document.getElementById("software_resizing"), function () {
 		settings[21] = document.getElementById("software_resizing").checked;
 		if (typeof gameboy == "object" && gameboy != null && !gameboy.canvasFallbackHappened) {
@@ -257,8 +254,8 @@ function registerGUIEvents() {
 	addEvent("click", document.getElementById("typed_arrays_disallow"), function () {
 		settings[22] = document.getElementById("typed_arrays_disallow").checked;
 	});
-	addEvent("click", document.getElementById("view_fullscreen"), fullscreenPlayer);
-	new popupMenu(document.getElementById("GameBoy_view_menu"), document.getElementById("GameBoy_view_popup"));
+	$("#view_fullscreen").click(fullscreenPlayer);
+	
 	addEvent("mouseup", document.getElementById("gfx"), onResizeOutput);
 	addEvent("resize", window, onResizeOutput);
 }
@@ -290,20 +287,19 @@ function initPlayer() {
 			gameboy.initLCD();
 		}
 	}
-	document.getElementById("title").style.display = "none";
-	document.getElementById("port_title").style.display = "none";
-	document.getElementById("fullscreenContainer").style.display = "none";
+	$("#fullscreenContainer").hide();
 }
 function fullscreenPlayer() {
 	if (typeof gameboy == "object" && gameboy != null && !gameboy.canvasFallbackHappened) {
 		if (!inFullscreen) {
 			gameboy.canvas = document.getElementById("fullscreen");
-			document.getElementById("fullscreen").className = (settings[19]) ? "minimum" : "maximum";
-			document.getElementById("fullscreenContainer").style.display = "block";
+			$("#fullscreenContainer").show();
+			$("body").css("overflow", "hidden");
 		}
 		else {
 			gameboy.canvas = document.getElementsByTagName("canvas")[0];
-			document.getElementById("fullscreenContainer").style.display = "none";
+			$("#fullscreenContainer").hide();
+			$("body").css("overflow", "default");
 		}
 		initNewCanvasSize();
 		gameboy.initLCD();
@@ -427,23 +423,7 @@ function mouseEnterVerify(oElement, event) {
 	//Hook target element with onmouseover and use this function to verify onmouseenter.
 	return !isDescendantOf(oElement, (typeof event.target != "undefined") ? event.target : event.srcElement) && isDescendantOf(oElement, (typeof event.relatedTarget != "undefined") ? event.relatedTarget : event.fromElement);
 }
-function addEvent(sEvent, oElement, fListener) {
-	try {	
-		oElement.addEventListener(sEvent, fListener, false);
-		cout("In addEvent() : Standard addEventListener() called to add a(n) \"" + sEvent + "\" event.", -1);
-	}
-	catch (error) {
-		oElement.attachEvent("on" + sEvent, fListener);	//Pity for IE.
-		cout("In addEvent() : Nonstandard attachEvent() called to add an \"on" + sEvent + "\" event.", -1);
-	}
-}
-function removeEvent(sEvent, oElement, fListener) {
-	try {	
-		oElement.removeEventListener(sEvent, fListener, false);
-		cout("In removeEvent() : Standard removeEventListener() called to remove a(n) \"" + sEvent + "\" event.", -1);
-	}
-	catch (error) {
-		oElement.detachEvent("on" + sEvent, fListener);	//Pity for IE.
-		cout("In removeEvent() : Nonstandard detachEvent() called to remove an \"on" + sEvent + "\" event.", -1);
-	}
+
+function addEvent(event, element, f) {
+	$(element).bind(event, f);
 }

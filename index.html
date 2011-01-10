@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<meta charset="utf-8">
+		
+		<title>GameBoy Online</title>
+		
+		<link rel="stylesheet" href="style.css">
+		
 		<script>
 			DEBUG_MESSAGES = true;
 			DEBUG_WINDOWING = false;
@@ -17,125 +23,7 @@
 		<script src="js/GameBoyIO.js"></script>
 		<script src="js/terminal.js"></script>
 		<script src="js/gui.js"></script>
-		<script>$(function() {
-			$(".next-toggler").each(function() {
-				var symbol = $(this);
-				var heading = symbol.parent();
-				var next = heading.next();
-				
-				heading.css("cursor", "pointer");
-				
-				heading.click(function() {
-					if(symbol.text() == "[+]") {
-						symbol.text("[-]");
-						next.show(100);
-					} else {
-						symbol.text("[+]");
-						next.hide(100);
-					}
-					return false;
-				});
-			})
-		})</script>
-		<style>
-			html {
-				background: rgb(200, 225, 225);
-				text-align: center;
-				font-family: sans-serif;
-			}
-		
-			.gfx {
-				width: 320px;
-				height: 288px;
-				background: gray;
-				margin: 0 auto;
-			}
-		
-			.column {
-				width: 26em; 
-				margin: 0 auto;
-				margin-bottom: 15em;
-				overflow: visible;
-				text-align: left;
-			}
-		
-			.option {
-				text-align: center;
-				background: #222;
-				color: #FFF;
-				width: 320px;
-				margin: 0 auto;
-			}
-		
-			.legend {
-				width: 20%;
-				float: left;
-				padding: .25em 0;
-			}
-		
-			.options {
-				margin: 0;
-				padding: 0;
-				list-style-type: none;
-			}
-		
-			.options li {
-				padding: .25em 0;
-				display: block;
-				float: left;
-				width: 20%;
-				cursor: pointer;
-			}
-		
-			.options li.selected {
-				font-weight: bold;
-			}
-		
-			.options li:hover {
-				background: #333;
-			}
-		
-			.clear {
-				clear: both;
-			}
-		
-			.next-toggler {
-				font-weight: normal;
-				font-family: monospace;
-				color: #888;
-			}
-			
-			h2 {
-				font-size: 125%;
-			}
-			
-			h3 {
-				font-size: 100%;
-				margin-bottom: 0;
-				margin-top: .25em;
-			}
-			
-			.boolean-settings {
-				padding: 0;
-				list-style-type: none;
-			}
-			
-			#terminal_output {
-				background: black;
-				color: white;
-				height: 15em;
-				overflow: auto;
-				font-family: monospace;
-			}
-			
-			.load-options {
-				list-style-type: none;
-			}
-			
-			.load-options li {
-				margin-bottom: .25em;
-			}
-		</style>
+		<script>$(guiInitialize);</script>
 	</head>
 	<body>
 		<h1>GameBoy Online</h1>
@@ -146,7 +34,7 @@
 			</p>
 		</noscript>
 		
-		<div class="gfx">
+		<div id="gfx">
 			<canvas></canvas>
 			<div id="canvasAltContainer"></div>
 		</div>
@@ -270,10 +158,6 @@
 					<label for="enable_colorization">Colorize Classic GameBoy Palettes</label>
 				</li>
 				<li>
-					<input type="checkbox" name="do_minimal" id="do_minimal">
-					<label for="do_minimal">Minimal View on Fullscreen</label>
-				</li>
-				<li>
 					<input type="checkbox" name="software_resizing" id="software_resizing">
 					<label for="software_resizing">Resize Canvas Directly in JavaScript</label>
 				</li>
@@ -294,17 +178,8 @@
 				</div>
 			</div>
 		</div>
-		<div id="fullscreenContainer">
+		<div id="fullscreenContainer" style="display: none;">
 			<canvas id="fullscreen" class="maximum"></canvas>
 		</div>
-		<script>
-			try {
-				addEvent("DOMContentLoaded", document, guiPreInitUnsafe);
-				addEvent("readystatechange", document, guiPreInitSafe);
-				addEvent("load", document, guiPreInitUnsafe);
-			} catch (error) {
-				alert("Could not initialize the emulator properly. Please try using a standards compliant browser.");
-			}
-		</script>
 	</body>
 </html>
