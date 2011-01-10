@@ -13,6 +13,6 @@ js/other/json2.js
 js/GameBoyCore.js
 js/GameBoyAudio.js
 js/GameBoyIO.js
-css/GameBoy.css.php
+css/GameBoy.css
 NETWORK:
 res/proxy.php
