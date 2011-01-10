@@ -1,14 +1,7 @@
 @charset "utf-8";
+
 html {
 	background-color: rgb(200, 225, 225);
-	background-attachment: fixed;
-	background-repeat: none;
-	background-image: url("../images/gradient_01.svg");
-	background-image: linear-gradient(315deg, rgb(200, 200, 255), rgb(200, 255, 200));
-	background-image: -moz-linear-gradient(315deg, rgb(200, 200, 255), rgb(200, 255, 200));
-	background-image: -webkit-gradient(linear, left top, right bottom, color-stop(0, #C8C8FF), color-stop(1, #C8FFC8));
-	filter: progid:DXImageTransform.Microsoft.Gradient(StartColorStr='#FFC8C8FF', EndColorStr='#FFC8FFC8', GradientType='0'), progid:DXImageTransform.Microsoft.Gradient(StartColorStr='#80C8C8FF', EndColorStr='#80C8FFC8', GradientType='1');
-	-ms-filter: "progid:DXImageTransform.Microsoft.Gradient(StartColorStr='#FFC8C8FF', EndColorStr='#FFC8FFC8', GradientType='0'), progid:DXImageTransform.Microsoft.Gradient(StartColorStr='#80C8C8FF', EndColorStr='#80C8FFC8', GradientType='1')";
 	margin: 0px;
 	padding: 0px;
 	font-family: arial;
@@ -59,8 +52,6 @@ div.window {
 	box-shadow: 5px 5px 10px rgb(30, 30, 30);
 	-moz-box-shadow: 5px 5px 10px rgb(30, 30, 30);
 	-webkit-box-shadow: 5px 5px 10px rgb(30, 30, 30);
-	filter: progid:DXImageTransform.Microsoft.Shadow(Color='#1E1E1E', strength='7', direction='135');
-	-ms-filter: "progid:DXImageTransform.Microsoft.Shadow(Color='#1E1E1E', strength='7', direction='135')";
 	border-top-left-radius: 10px;
 	border-top-right-radius: 10px;
 	-webkit-border-top-left-radius: 10px;
@@ -108,14 +99,6 @@ div.menubar {
 	padding: 0px 0px 0px 3px;
 	text-align: left;
 	background-color: rgb(210, 210, 210);
-	background-repeat: repeat-x;
-	background-attachment: scroll;
-	background-image: url("../images/gradient_02.svg");
-	background-image: linear-gradient(top, rgb(150, 150, 150), rgb(220, 220, 220), rgb(180, 180, 180));
-	background-image: -moz-linear-gradient(top, rgb(150, 150, 150), rgb(220, 220, 220), rgb(180, 180, 180));
-	background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #969696), color-stop(0.5, #DCDCDC), color-stop(1, #B4B4B4));
-	filter: progid:DXImageTransform.Microsoft.Gradient(StartColorStr='#FF969696', EndColorStr='#FFB4B4B4', GradientType='0');
-	-ms-filter: "progid:DXImageTransform.Microsoft.Gradient(StartColorStr='#FF969696', EndColorStr='#FFB4B4B4', GradientType='0')";
 }
 
 div.menubar > span {
@@ -134,15 +117,7 @@ div.menubar > span:hover {
 	box-shadow: 2px 2px 1px rgb(30, 30, 30);
 	-moz-box-shadow: 2px 2px 1px rgb(30, 30, 30);
 	-webkit-box-shadow: 2px 2px 1px rgb(30, 30, 30);
-	filter: progid:DXImageTransform.Microsoft.Shadow(Color='#1E1E1E', strength='3', direction='135');
-	-ms-filter: "progid:DXImageTransform.Microsoft.Shadow(Color='#1E1E1E', strength='3', direction='135')";
 	background-color: rgb(160, 160, 160);
-	background-repeat: repeat-x;
-	background-attachment: scroll;
-	background-image: url("../images/gradient_03.svg");
-	background-image: linear-gradient(top, rgb(160, 160, 160), rgb(190, 190, 190), rgb(160, 160, 160));
-	background-image: -moz-linear-gradient(top, rgb(160, 160, 160), rgb(190, 190, 190), rgb(160, 160, 160));
-	background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #A0A0A0), color-stop(0.5, #BEBEBE), color-stop(1, #A0A0A0));
 }
 
 div.menubar> span:active {
@@ -150,12 +125,6 @@ div.menubar> span:active {
 	-moz-box-shadow: inset 2px 2px 1px rgb(30, 30, 30);
 	-webkit-box-shadow: inset 2px 2px 1px rgb(30, 30, 30);
 	background-color: rgb(220, 220, 220);
-	background-repeat: repeat-x;
-	background-attachment: scroll;
-	background-image: url("../images/gradient_04.svg");
-	background-image: linear-gradient(top, rgb(190, 190, 190), rgb(160, 160, 160), rgb(190, 190, 190));
-	background-image: -moz-linear-gradient(top, rgb(190, 190, 190), rgb(160, 160, 160), rgb(190, 190, 190));
-	background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #BEBEBE), color-stop(0.5, #A0A0A0), color-stop(1, #BEBEBE));
 }
 div#gfx {
 	height: auto;
@@ -168,14 +137,6 @@ div#gfx {
 	right: 3px;
 	top: 43px;
 	background-color: rgb(200, 50, 50);
-	background-repeat: repeat-x;
-	background-attachment: scroll;
-	background-image: url("../images/gradient_05.svg");
-	background-image: linear-gradient(top, rgb(200, 50, 50), rgb(200, 75, 150));
-	background-image: -moz-linear-gradient(top, rgb(200, 50, 50), rgb(200, 75, 150));
-	background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #C83232), color-stop(1, #C84B96));
-	filter: progid:DXImageTransform.Microsoft.Gradient(StartColorStr='#FFC83232', EndColorStr='#FFC84B96', GradientType='0');
-	-ms-filter: "progid:DXImageTransform.Microsoft.Gradient(StartColorStr='#FFC83232', EndColorStr='#FFC84B96', GradientType='0')";
 }
 
 body > div#fullscreenContainer {
@@ -426,12 +387,6 @@ ul.menu {
 	left: 0px;
 	z-index: 3;
 	background-color: rgb(200, 200, 200);
-	background-repeat: repeat-x;
-	background-attachment: scroll;
-	background-image: url("../images/gradient_06.svg");
-	background-image: linear-gradient(left, rgb(200, 200, 200), rgb(240, 240, 240));
-	background-image: -moz-linear-gradient(left, rgb(200, 200, 200), rgb(240, 240, 240));
-	background-image: -webkit-gradient(linear, top left, top right, color-stop(0, #C8C8C8), color-stop(1, #DCDCDC));
 	border-radius: 3px;
 	-moz-border-radius: 3px;
 	-webkit-border-radius: 3px;
