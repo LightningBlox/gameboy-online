@@ -174,9 +174,10 @@ function GameBoyJoyStickSignalHandler(e) {
 		catch (error) { }
 	}
 }
+
 //Audio API Event Handler:
 var audioIndex = 0;
-function audioOutputEvent(event) {
+function audioOutputEvent(event) { // GameBoyCore expects this to be defined globally
 	var count = 0;
 	var buffer1 = event.outputBuffer.getChannelData(0);
 	var buffer2 = event.outputBuffer.getChannelData(1);

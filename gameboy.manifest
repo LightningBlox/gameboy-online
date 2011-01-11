@@ -1,17 +1,15 @@
 CACHE MANIFEST
 CACHE:
-js/lib/terminal.js
-js/lib/opacity.js
-js/lib/waveAudio.js
-js/lib/BMPCanvas.js
-js/lib/base64.js
-js/lib/audioRunner.js
-js/lib/transportHandler.js
-js/lib/json2.js
-js/gui.js
-js/GameBoyCore.js
-js/GameBoyAudio.js
 js/GameBoyIO.js
+js/gui.js
+js/lib/BMPCanvas.js
+js/lib/GameBoyCore.js
+js/lib/audioRunner.js
+js/lib/base64.js
+js/lib/json2.js
+js/lib/opacity.js
+js/lib/transportHandler.js
+js/lib/waveAudio.js
 style.css
 NETWORK:
 res/proxy.php
