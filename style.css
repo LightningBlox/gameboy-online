@@ -14,6 +14,20 @@ html {
 	position: relative;
 }
 
+#gfx > canvas, #fullscreenContainer > #fullscreen, #gfx > #canvasAltContainer > img {
+	image-rendering: optimizeSpeed;			/*Give priority to the nearest-neighbor algorithm when rendering*/
+	image-rendering: -moz-crisp-edges;		/*Forces firefox to stay in nearest-neighbor mode, which is what we want.*/
+	image-rendering: -webkit-crisp-edges;	/*Here for when WebKit supports this.*/
+	-ms-interpolation-mode: nearest-neighbor;
+	shape-rendering: geometricPrecision;	/*We don't want the background leaking through*/
+}
+
+#gfx > #canvasAltContainer > img {
+	display: block;
+	display: inline-block;
+	float: left;	/*Float and don't absolutely position, due to width & height rounding by many browsers*/
+}
+
 #gfx > canvas, #gfx > div#canvasAltContainer {
 	position: absolute;
 	z-index: 5;
@@ -124,4 +138,32 @@ h3 {
 	width: 100%;
 	height: 100%;
 	z-index: 6;
+}
+
+
+div#terminal > div#terminal_output > span.white {
+	color: rgb(255, 255, 255);
+}
+
+div#terminal > div#terminal_output > span.white:before {
+	content: "<DEBUG> ";
+	font-weight: bold;
+}
+
+div#terminal > div#terminal_output > span.yellow {
+	color: rgb(255, 255, 0);
+}
+
+div#terminal > div#terminal_output > span.yellow:before {
+	content: "<WARNING> ";
+	font-weight: bold;
+}
+
+div#terminal > div#terminal_output > span.red {
+	color: rgb(0, 0, 255);
+}
+
+div#terminal > div#terminal_output > span.red:before {
+	content: "<ERROR> ";
+	font-weight: bold;
 }

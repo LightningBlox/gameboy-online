@@ -1,13 +1,29 @@
 var inFullscreen = false;
 
+// mapping setting control ids to emulator setting ids
+var setting_map = {
+	enable_sound: 0,
+	enable_mono_sound: 1,
+	disable_colors: 2,
+	bmp_method: 5,
+	auto_frameskip: 7,
+	rom_only_override: 9,
+	mbc_enable_override: 10,
+	enable_gbc_bios: 16,
+	enable_colorization: 17,
+	software_resizing: 21,
+	typed_arrays_disallow: 22
+};
+
 function guiInitialize() {
+	// Initialize expanding/hiding headers
 	$(".next-toggler").each(function() {
 		var symbol = $(this);
 		var heading = symbol.parent();
 		var next = heading.next();
-	
+		
 		heading.css("cursor", "pointer");
-	
+		
 		heading.click(function() {
 			if(symbol.text() == "[+]") {
 				symbol.text("[-]");
@@ -20,6 +36,7 @@ function guiInitialize() {
 		});
 	});
 	
+	// Initialize scale buttons
 	$("#scale-choices .scale").click(function() {
 		var scale = { "1x": 1, "2x": 2, "4x": 4 }[$(this).text()];
 		$("#scale-choices .scale").css("font-weight", "normal");
@@ -56,18 +73,12 @@ function guiInitialize() {
 		settings[1] = true;		//Mono on non-native to speed it up.
 		//cout("Native audio sample writing support not found, audio turned off by default.", 1);
 	}
-	//Update the settings to the emulator's default:
-	document.getElementById("enable_sound").checked = settings[0];
-	document.getElementById("enable_mono_sound").checked = settings[1];
-	document.getElementById("disable_colors").checked = settings[2];
-	document.getElementById("bmp_method").checked = settings[5];
-	document.getElementById("auto_frameskip").checked = settings[7];
-	document.getElementById("rom_only_override").checked = settings[9];
-	document.getElementById("mbc_enable_override").checked = settings[10];
-	document.getElementById("enable_gbc_bios").checked = settings[16];
-	document.getElementById("enable_colorization").checked = settings[17];
-	document.getElementById("software_resizing").checked = settings[21];
-	document.getElementById("typed_arrays_disallow").checked = settings[22];
+	
+	// Set settings controls to emulator's values
+	
+	for(name in setting_map) {
+		document.getElementById(name).checked = settings[setting_map[name]];
+	}
 }
 function registerGUIEvents() {
 	cout("In registerGUIEvents() : Registering GUI Events.", -1);
@@ -216,58 +227,56 @@ function registerGUIEvents() {
 	
 	$("#save_state_clicker").click(save);
 	
-	addEvent("click", document.getElementById("enable_sound"), function () {
-		settings[0] = document.getElementById("enable_sound").checked;
+	// update settings on click of controls
+	$(".boolean-settings input").click(function() {
+		settings[setting_map[this.id]] = this.checked;
+	});
+	
+	// for settings that require specific actions on change:
+	
+	$("#enable_sound").click(function () {
+		settings[setting_map[this.id]] = this.checked;
+		
 		if (typeof gameboy == "object" && gameboy != null) {
 			gameboy.initSound();
 		}
 	});
-	addEvent("click", document.getElementById("enable_mono_sound"), function () {
-		settings[1] = document.getElementById("enable_mono_sound").checked;
+	
+	$("#enable_mono_sound").click(function () {
+		settings[setting_map[this.id]] = this.checked;
+		
 		if (typeof gameboy == "object" && gameboy != null) {
 			gameboy.initSound();
 		}
 	});
-	addEvent("click", document.getElementById("disable_colors"), function () {
-		settings[2] = document.getElementById("disable_colors").checked;
-	});
-	addEvent("click", document.getElementById("bmp_method"), function () {
-		settings[5] = document.getElementById("bmp_method").checked;
-	});
-	addEvent("click", document.getElementById("auto_frameskip"), function () {
-		settings[7] = document.getElementById("auto_frameskip").checked;
+	
+	$("#auto_frameskip").click(function () {
+		settings[setting_map[this.id]] = this.checked;
+		
 		settings[4] = 0;	//Reset the frame skipping amount.
 	});
-	addEvent("click", document.getElementById("rom_only_override"), function () {
-		settings[9] = document.getElementById("rom_only_override").checked;
-	});
-	addEvent("click", document.getElementById("mbc_enable_override"), function () {
-		settings[10] = document.getElementById("mbc_enable_override").checked;
-	});
-	addEvent("click", document.getElementById("enable_gbc_bios"), function () {
-		settings[16] = document.getElementById("enable_gbc_bios").checked;
-	});
-	addEvent("click", document.getElementById("enable_colorization"), function () {
-		settings[17] = document.getElementById("enable_colorization").checked;
+	
+	$("#enable_colorization").click(function () {
+		settings[setting_map[this.id]] = this.checked;
+		
 		if (typeof gameboy == "object" && gameboy != null) {
 			gameboy.checkPaletteType();
 		}
 	});
-	addEvent("click", document.getElementById("software_resizing"), function () {
-		settings[21] = document.getElementById("software_resizing").checked;
+	
+	$("#software_resizing").click(function () {
+		settings[21] = this.checked;
+		
 		if (typeof gameboy == "object" && gameboy != null && !gameboy.canvasFallbackHappened) {
 			initNewCanvasSize();
 			gameboy.initLCD();
 		}
 	});
-	addEvent("click", document.getElementById("typed_arrays_disallow"), function () {
-		settings[22] = document.getElementById("typed_arrays_disallow").checked;
-	});
 	
 	$("#view_fullscreen").click(fullscreenPlayer);
 	
-	addEvent("mouseup", document.getElementById("gfx"), onResizeOutput);
-	addEvent("resize", window, onResizeOutput);
+	$("#gfx").mouseup(onResizeOutput);
+	$(window).resize(onResizeOutput);
 }
 function onResizeOutput() {
 	if (typeof gameboy == "object" && gameboy != null && !gameboy.canvasFallbackHappened && settings[21]) {
@@ -328,7 +337,6 @@ function loadSaveStates() {
 				cout("Adding the save state \""+ states[index] + "\" drop down menu.", 0);
 				addSaveStateItem(states[index]);
 			}
-			document.getElementById("open_saved_clicker").style.display = "block";
 		}
 	}
 	catch (error) {
