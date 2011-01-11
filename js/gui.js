@@ -15,13 +15,13 @@ var setting_map = {
 	typed_arrays_disallow: 22
 };
 
+
 function cout(message, colorIndex) {
 	var terminal_output = document.getElementById("terminal_output");
-	if ((colorIndex != 0 || DEBUG_MESSAGES) && (colorIndex != -1 || DEBUG_WINDOWING)) {
+	if (colorIndex != 0 || DEBUG_MESSAGES) {
 		var lineout = document.createElement('span');
 		lineout.appendChild(document.createTextNode(message));
 		switch (colorIndex) {
-			case -1:
 			case 0:
 				lineout.className = "white";
 				break;
