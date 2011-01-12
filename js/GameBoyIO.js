@@ -1,218 +1,201 @@
-var gameboy = null;						//GameBoyCore object.
-var gbRunInterval;						//GameBoyCore Timer
-var settings = [						//Some settings.
-	true, 								//Turn on sound.
-	false,								//Force Mono sound.
-	false,								//Give priority to GameBoy mode
-	[39, 37, 38, 40, 88, 90, 16, 13],	//Keyboard button map.
-	0,									//Frameskip Amount (Auto frameskip setting allows the script to change this.)
-	false,								//Use the data URI BMP method over the canvas tag method?
-	[16, 12],							//How many tiles in each direction when using the BMP method (width * height).
-	true,								//Auto Frame Skip
-	29,									//Maximum Frame Skip
-	false,								//Override to allow for MBC1 instead of ROM only (compatibility for broken 3rd-party cartridges).
-	false,								//Override MBC RAM disabling and always allow reading and writing to the banks.
-	20,									//Audio granularity setting (Sampling of audio every x many machine cycles)
-	10,									//Frameskip base factor
-	17826,								//Target number of machine cycles per loop. (4,194,300 / 1000 * 17)
-	70000,								//Sample Rate
-	0x10,								//How many bits per WAV PCM sample (For browsers that fall back to WAV PCM generation)
-	true,								//Use the GBC BIOS?
-	true,								//Colorize GB mode?
-	512,								//Sample size for webkit audio.
-	false,								//Whether to display the canvas at 144x160 on fullscreen or as stretched.
-	17,									//Interval for the emulator loop.
-	false,								//Render nearest-neighbor scaling in javascript?
-	false								//Disallow typed arrays?
-];
-function start(canvas, canvasAlt, ROM) {
-	clearLastEmulation();
-	gameboy = new GameBoyCore(canvas, canvasAlt, ROM);
-	gameboy.start();
-	run();
-}
-function continueCPU() {
-	gameboy.run();
-}
-function run() {
-	if (typeof gameboy == "object" && gameboy != null && (gameboy.stopEmulator & 2) == 2) {
-		gameboy.stopEmulator &= 1;
-		gameboy.lastIteration = new Date().getTime();
-		cout("Starting the iterator.", 0);
-		gbRunInterval = setInterval(continueCPU, settings[20]);
-	}
-	else if ((gameboy.stopEmulator & 2) == 0) {
-		cout("The GameBoy core is already running.", 1);
-	}
-	else {
-		cout("GameBoy core cannot run while it has not been initialized.", 1);
-	}
-}
-function pause() {
-	if (typeof gameboy == "object" && gameboy != null && (gameboy.stopEmulator & 2) == 0) {
-		clearLastEmulation();
-	}
-	else if ((gameboy.stopEmulator & 2) == 2) {
-		cout("GameBoy core has already been paused.", 1);
-	}
-	else {
-		cout("GameBoy core cannot be paused while it has not been initialized.", 1);
-	}
-}
-function clearLastEmulation() {
-	if (typeof gameboy == "object" && gameboy != null && (gameboy.stopEmulator & 2) == 0) {
-		clearInterval(gbRunInterval);
-		gameboy.stopEmulator |= 2;
-		cout("The previous emulation has been cleared.", 0);
-	}
-	else {
-		cout("No previous emulation was found to be cleared.", 0);
-	}
-}
-function save() {
-	if (typeof gameboy == "object" && gameboy != null) {
-		try {
-			var state_suffix = 0;
-			while (findValue(gameboy.name + "_" + state_suffix) != null) {
-				state_suffix++;
-			}
-			setValue(gameboy.name + "_" + state_suffix, gameboy.saveState());
-			if (findValue("state_names") == null) {
-				setValue("state_names", [gameboy.name + "_"+ state_suffix]);
-			}
-			else {
-				var list_of_states = findValue("state_names");
-				list_of_states[list_of_states.length] = (gameboy.name + "_" + state_suffix);
-				setValue("state_names", list_of_states);
-			}
-			document.getElementById("open_saved_clicker").style.display = "block";
-			addSaveStateItem(gameboy.name + "_" + state_suffix);
-		}
-		catch (error) {
-			cout("Could not save the current emulation state(\"" + error.message + "\").", 2);
-		}
-	}
-	else {
-		cout("GameBoy core cannot be saved while it has not been initialized.", 1);
-	}
-}
-function openState(filename, canvas, canvasAlt) {
-	try {
-		if (findValue(filename) != null) {
-			try {
-				clearLastEmulation();
-				cout("Attempting to run a saved emulation state.", 0);
-				gameboy = new GameBoyCore(canvas, canvasAlt, "");
-				gameboy.savedStateFileName = filename;
-				gameboy.returnFromState(findValue(filename));
-				run();
-			}
-			catch (error) {
-				alert(error.message + " file: " + error.fileName + " line: " + error.lineNumber);
-			}
-		}
-		else {
-			cout("Could not find the save state \"" + filename + "\".", 2);
-		}
-	}
-	catch (error) {
-		cout("Could not open the saved emulation state.", 2);
-	}
-}
-function matchKey(key) {	//Maps a keyboard key to a gameboy key.
-	//Order: Right, Left, Up, Down, A, B, Select, Start
-	for (var index = 0; index < settings[3].length; index++) {
-		if (settings[3][index] == key) {
-			return index;
-		}
-	}
-	cout("Keyboard key #" + key + " was pressed or released, but is not being utilized by the emulator.", 0);
-	return -1;
-}
-function GameBoyKeyDown(e) {
-	if (typeof gameboy == "object" && gameboy != null && (gameboy.stopEmulator & 2) == 0) {
-		var keycode = matchKey(e.keyCode);
-		if (keycode >= 0 && keycode < 8) {
-			gameboy.JoyPadEvent(keycode, true);
-			try {
-				e.preventDefault();
-			}
-			catch (error) { }
-		}
-		else {
-			cout("Keyboard key press ignored", 1);
-		}
-	}
-	else {
-		cout("Keyboard key press ignored, since the core is not running.", 1);
-	}
-}
-function GameBoyKeyUp(e) {
-	if (typeof gameboy == "object" && gameboy != null && (gameboy.stopEmulator & 2) == 0) {
-		var keycode = matchKey(e.keyCode);
-		if (keycode >= 0 && keycode < 8) {
-			gameboy.JoyPadEvent(keycode, false);
-			try {
-				e.preventDefault();
-			}
-			catch (error) { }
-		}
-		else {
-			cout("Keyboard key release ignored", 1);
-		}
-	}
-	else {
-		cout("Keyboard key release ignored, since the core is not running.", 1);
-	}
-}
-function GameBoyJoyStickSignalHandler(e) {
-	if (typeof gameboy == "object" && gameboy != null && (gameboy.stopEmulator & 2) == 0) {
-		//TODO: Add MBC support first for Kirby's Tilt n Tumble
-		try {
-			e.preventDefault();
-		}
-		catch (error) { }
-	}
-}
-
-//Audio API Event Handler:
-var audioIndex = 0;
-function audioOutputEvent(event) { // GameBoyCore expects this to be defined globally
-	var count = 0;
-	var buffer1 = event.outputBuffer.getChannelData(0);
-	var buffer2 = event.outputBuffer.getChannelData(1);
-	var bufferLength = buffer1.length;
-	if (settings[0] && typeof gameboy == "object" && gameboy != null && (gameboy.stopEmulator & 2) == 0 && gameboy.soundMasterEnabled) {
-		if (settings[1]) {
-			//MONO:
-			while (count < bufferLength) {
-				buffer2[count] = buffer1[count] = gameboy.audioSamples[audioIndex++];
-				if (audioIndex >= gameboy.numSamplesTotal) {
-					audioIndex = 0;
-				}
-				count++;
-			}
-		}
-		else {
-			//STEREO:
-			while (count < bufferLength) {
-				buffer1[count] = gameboy.audioSamples[audioIndex++];
-				if (audioIndex >= gameboy.numSamplesTotal) {
-					audioIndex = 0;
-				}
-				buffer2[count] = gameboy.audioSamples[audioIndex++];
-				if (audioIndex >= gameboy.numSamplesTotal) {
-					audioIndex = 0;
-				}
-				count++;
-			}
-		}
-	}
-	else {
-		audioIndex = gameboy.audioIndex = 0;
-		while (count < settings[18]) {
-			buffer2[count] = buffer1[count] = 0;
-			count++;
-		}
-	}
-}
+(function() {
+  var GameBoyWithIO, formatError;
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  window.MASK_FRAME_OVER = 0x1;
+  window.MASK_STOPPED = 0x2;
+  formatError = function(error) {
+    return "" + error.fileName + ":" + error.lineNumber + " " + error.message;
+  };
+  window.GameBoyWithIO = GameBoyWithIO = (function() {
+    function GameBoyWithIO() {
+      this.settings = this.settings.slice();
+      this.core = null;
+      this.audioIndex = 0;
+      window.settings = this.settings;
+      window.audioOutputEvent = (__bind(function(event) {
+        return this.handleAudioOutput(event);
+      }, this));
+    }
+    GameBoyWithIO.prototype.start = function(canvas, canvasAlt, ROM) {
+      this.clear();
+      this.core = new GameBoyCore(canvas, canvasAlt, ROM);
+      this.core.start();
+      return this.run();
+    };
+    GameBoyWithIO.prototype.debug = function(s) {
+      return cout(s, 0);
+    };
+    GameBoyWithIO.prototype.warn = function(s) {
+      return cout(s, 1);
+    };
+    GameBoyWithIO.prototype.error = function(s) {
+      return cout(s, 2);
+    };
+    GameBoyWithIO.prototype.continueCPU = function() {
+      return this.core.run();
+    };
+    GameBoyWithIO.prototype.run = function() {
+      if (this.core != null) {
+        if (this.core.stopEmulator & MASK_STOPPED) {
+          this.core.stopEmulator &= MASK_FRAME_OVER;
+          this.core.lastIteration = new Date().getTime();
+          this.debug("Starting the iterator.");
+          return this.intervalId = setInterval((__bind(function() {
+            return this.continueCPU();
+          }, this)), this.settings[20]);
+        } else if (!(this.core.stopEmulator & MASK_STOPPED)) {
+          return this.warn("GameBoyCore is already running.");
+        }
+      } else {
+        return this.warn("GameBoyCore cannot be run before being initialized.");
+      }
+    };
+    GameBoyWithIO.prototype.pause = function() {
+      if (this.core != null) {
+        if (!(this.core.stopEmulator & MASK_STOPPED)) {
+          return this.clear();
+        } else if (this.core.stopEmulator & MASK_STOPPED) {
+          return this.warn("GameBoyCore has already been paused.");
+        }
+      } else {
+        return this.warn("GameBoyCore cannot be paused before being initialized.");
+      }
+    };
+    GameBoyWithIO.prototype.clear = function() {
+      if ((this.core != null) && !(this.core.stopEmulator & MASK_STOPPED)) {
+        clearInterval(this.intervalId);
+        this.core.stopEmulator |= MASK_STOPPED;
+        return this.debug("The emulation has been cleared.");
+      } else {
+        return this.warn("No emulation found to clear.");
+      }
+    };
+    GameBoyWithIO.prototype.save = function() {
+      var listOfStates, stateName, stateSuffix;
+      if (this.core != null) {
+        try {
+          stateSuffix = 0;
+          while (findValue("" + this.core.name + "_" + stateSuffix)) {
+            stateSuffix++;
+          }
+          stateName = "" + this.core.name + "_" + stateSuffix;
+          setValue(stateName, this.core.saveState());
+          if (!(findValue("state_names") != null)) {
+            setValue("state_names", [stateName]);
+          } else {
+            listOfStates = findValue("state_names");
+            listOfStates.push(stateName);
+            setValue("state_names", listOfStates);
+          }
+          return addSaveStateItem(stateName);
+        } catch (error) {
+          return this.error("Error saving current emulation state: " + (formatError(error)));
+        }
+      } else {
+        return this.warn("Uninitialized GameBoyCore has no state to save.");
+      }
+    };
+    GameBoyWithIO.prototype.open = function(filename, canvas, canvasAlt) {
+      try {
+        if (findValue(filename)) {
+          this.clear();
+          this.debug("Attempting to run saved emulation state: " + filename);
+          this.core = new GameBoyCore(canvas, canvasAlt, "");
+          this.core.savedStateFileName = filename;
+          this.core.returnFromState(findValue(filename));
+          return this.run();
+        } else {
+          return this.error("Could not find save state: " + filename);
+        }
+      } catch (error) {
+        return this.error("Error loading emulation state: " + (formatError(error)));
+      }
+    };
+    GameBoyWithIO.prototype.mapKey = function(kb_key) {
+      var index, _ref;
+      for (index = 0, _ref = this.settings[3].length; (0 <= _ref ? index <= _ref : index >= _ref); (0 <= _ref ? index += 1 : index -= 1)) {
+        if (this.settings[3][index] === kb_key) {
+          return index;
+        }
+      }
+      return null;
+    };
+    GameBoyWithIO.prototype.handleKeyDown = function(event) {
+      var gb_keycode;
+      if ((this.core != null) && !(this.core.stopEmulator & MASK_STOPPED)) {
+        gb_keycode = this.mapKey(event.keyCode);
+        if (gb_keycode != null) {
+          this.core.JoyPadEvent(gb_keycode, true);
+          try {
+            return event.preventDefault();
+          } catch (_e) {}
+        } else {
+          return this.debug("Press of unmapped key ignored.");
+        }
+      } else {
+        return this.debug("Key press ignored since the GameBoyCore is not running.");
+      }
+    };
+    GameBoyWithIO.prototype.handleKeyUp = function(event) {
+      var gb_keycode;
+      if ((this.core != null) && !(this.core.stopEmulator & MASK_STOPPED)) {
+        gb_keycode = this.mapKey(event.keyCode);
+        if (gb_keycode != null) {
+          this.core.JoyPadEvent(gb_keycode, false);
+          try {
+            return event.preventDefault();
+          } catch (_e) {}
+        } else {
+          return this.debug("Release of unmapped key ignored.");
+        }
+      } else {
+        return this.debug("Key release ignored since the GameBoyCore is not running.");
+      }
+    };
+    GameBoyWithIO.prototype.handleTilt = function(event) {};
+    GameBoyWithIO.prototype.handleAudioOutput = function(event) {
+      var audioIndex, buffer1, buffer2, bufferLength, count, _results, _results2, _results3;
+      count = 0;
+      buffer1 = event.outputBuffer.getChannelData(0);
+      buffer2 = event.outputBuffer.getChannelData(1);
+      bufferLength = buffer1.length;
+      if (this.settings[0] && (this.core != null) && !(this.core.stopEmulator & MASK_STOPPED) && this.core.soundMasterEnabled) {
+        if (this.settings[1]) {
+          _results = [];
+          while (count < bufferLength) {
+            buffer2[count] = buffer1[count] = this.core.audioSamples[this.audioIndex++];
+            if (this.audioIndex >= this.core.numSamplesTotal) {
+              this.audioIndex = 0;
+            }
+            _results.push(count++);
+          }
+          return _results;
+        } else {
+          _results2 = [];
+          while (count < bufferLength) {
+            buffer1[count] = this.core.audioSamples[this.audioIndex++];
+            if (this.audioIndex >= this.core.numSamplesTotal) {
+              this.audioIndex = 0;
+            }
+            buffer2[count] = this.core.audioSamples[this.audioIndex++];
+            if (this.audioIndex >= this.core.numSamplesTotal) {
+              this.audioIndex = 0;
+            }
+            _results2.push(count++);
+          }
+          return _results2;
+        }
+      } else {
+        audioIndex = this.core.audioIndex = 0;
+        _results3 = [];
+        while (count < this.settings[18]) {
+          buffer2[count] = buffer1[count] = 1;
+          _results3.push(count++);
+        }
+        return _results3;
+      }
+    };
+    GameBoyWithIO.prototype.settings = [true, false, false, [39, 37, 38, 40, 88, 90, 16, 13], 0, false, [16, 12], true, 29, false, false, 20, 10, 17826, 70000, 0x10, true, true, 512, false, 17, false, false];
+    return GameBoyWithIO;
+  })();
+}).call(this);

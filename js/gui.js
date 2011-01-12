@@ -1,4 +1,5 @@
 var inFullscreen = false;
+var gameboy = new GameBoyWithIO();
 
 // mapping setting control ids to emulator setting ids
 var setting_map = {
@@ -15,21 +16,21 @@ var setting_map = {
 	typed_arrays_disallow: 22
 };
 
-
-function cout(message, colorIndex) {
+function cout(message, level) {
 	var terminal_output = document.getElementById("terminal_output");
-	if (colorIndex != 0 || DEBUG_MESSAGES) {
+	
+	if (level > 0 || DEBUG_MESSAGES) {
 		var lineout = document.createElement('span');
 		lineout.appendChild(document.createTextNode(message));
-		switch (colorIndex) {
+		switch (level) {
 			case 0:
-				lineout.className = "white";
+				lineout.className = "debug";
 				break;
 			case 1:
-				lineout.className = "yellow";
+				lineout.className = "warning";
 				break;
 			case 2:
-				lineout.className = "red";
+				lineout.className = "error";
 		}
 		terminal_output.appendChild(lineout);
 		terminal_output.appendChild(document.createElement('br'));
@@ -99,15 +100,16 @@ function guiInitialize() {
 		}
 	}
 	catch (error) {
-		//settings[0] = false;	//Turn off audio by default
-		settings[1] = true;		//Mono on non-native to speed it up.
+		//gameboy.settings[0] = false;	//Turn off audio by default
+		gameboy.debug("Using non-native sound, defaulting to mono.");
+		gameboy.settings[1] = true;		//Mono on non-native to speed it up.
 		//cout("Native audio sample writing support not found, audio turned off by default.", 1);
 	}
 	
 	// Set settings controls to emulator's values
 	
 	for(name in setting_map) {
-		document.getElementById(name).checked = settings[setting_map[name]];
+		document.getElementById(name).checked = gameboy.settings[setting_map[name]];
 	}
 }
 function registerGUIEvents() {
@@ -122,19 +124,19 @@ function registerGUIEvents() {
 		}
 		else {
 			//Control keys / other
-			GameBoyKeyDown(event);
+			gameboy.handleKeyDown(event);
 		}
 	});
 	
-	$(document).keyup(GameBoyKeyUp);
-	//$(window).bind("MozOrientation", GameBoyJoyStickSignalHandler);
+	$(document).keyup(function(event){ gameboy.handleKeyUp(event) });
+	//$(window).bind("MozOrientation", function(){ gameboy.handleTilt });
 	
 	$("#data_uri_clicker").click(function () {
 		var datauri = prompt("Please input the ROM image's Base 64 Encoded Text:", "");
 		if (datauri != null && datauri.length > 0) {
 			try {
 				cout(Math.floor(datauri.length * 3 / 4) + " bytes of data submitted by form (text length of " + datauri.length + ").", 0);
-				start(document.getElementsByTagName("canvas")[0],  document.getElementById("canvasAltContainer"), base64_decode(datauri));
+				gameboy.start(document.getElementsByTagName("canvas")[0],  document.getElementById("canvasAltContainer"), base64_decode(datauri));
 				initPlayer();
 			}
 			catch (error) {
@@ -159,7 +161,7 @@ function registerGUIEvents() {
 						try {
 							var romStream = base64_decode(arguments[1]);
 							cout(romStream.length + " bytes of base64 decoded data retrieved by XHR (text length of " + arguments[1].length + ").", 0);
-							start(document.getElementsByTagName("canvas")[0],  document.getElementById("canvasAltContainer"), romStream);
+							gameboy.start(document.getElementsByTagName("canvas")[0],  document.getElementById("canvasAltContainer"), romStream);
 							initPlayer();
 						}
 						catch (error) {
@@ -186,7 +188,7 @@ function registerGUIEvents() {
 							if (this.readyState == 2) {
 								cout("file loaded.", 0);
 								try {
-									start(document.getElementsByTagName("canvas")[0], document.getElementById("canvasAltContainer"), this.result);
+									gameboy.start(document.getElementsByTagName("canvas")[0], document.getElementById("canvasAltContainer"), this.result);
 									initPlayer();
 								}
 								catch (error) {
@@ -204,7 +206,7 @@ function registerGUIEvents() {
 						//Gecko 1.9.0, 1.9.1 (Non-Standard Method)
 						var romImageString = this.files[this.files.length - 1].getAsBinary();
 						try {
-							start(document.getElementsByTagName("canvas")[0], document.getElementById("canvasAltContainer"), romImageString);
+							gameboy.start(document.getElementsByTagName("canvas")[0], document.getElementById("canvasAltContainer"), romImageString);
 							initPlayer();
 						}
 						catch (error) {
@@ -227,14 +229,14 @@ function registerGUIEvents() {
 	});
 	
 	$("#restart_cpu_clicker").click(function () {
-		if (typeof gameboy == "object" && gameboy != null && typeof gameboy.ROMImage == "string") {
+		if (gameboy.core != null && typeof gameboy.core.ROMImage == "string") {
 			try {
-				if (!gameboy.fromSaveState) {
-					start(document.getElementsByTagName("canvas")[0], document.getElementById("canvasAltContainer"), gameboy.ROMImage);
+				if (!gameboy.core.fromSaveState) {
+					gameboy.start(document.getElementsByTagName("canvas")[0], document.getElementById("canvasAltContainer"), gameboy.core.ROMImage);
 					initPlayer();
 				}
 				else {
-					openState(gameboy.savedStateFileName, document.getElementsByTagName("canvas")[0],  document.getElementById("canvasAltContainer"));
+					gameboy.open(gameboy.core.savedStateFileName, document.getElementsByTagName("canvas")[0],  document.getElementById("canvasAltContainer"));
 					initPlayer();
 				}
 			}
@@ -248,56 +250,56 @@ function registerGUIEvents() {
 	});
 	
 	$("#cpu_toggle_clicker").toggle(function() {
-		pause();
+		gameboy.pause();
 		$(this).text("Resume");
 	}, function() {
-		run();
+		gameboy.run();
 		$(this).text("Pause");
 	});
 	
-	$("#save_state_clicker").click(save);
+	$("#save_state_clicker").click(gameboy.save);
 	
 	// update settings on click of controls
 	$(".boolean-settings input").click(function() {
-		settings[setting_map[this.id]] = this.checked;
+		gameboy.settings[setting_map[this.id]] = this.checked;
 	});
 	
 	// for settings that require specific actions on change:
 	
 	$("#enable_sound").click(function () {
-		settings[setting_map[this.id]] = this.checked;
+		gameboy.settings[setting_map[this.id]] = this.checked;
 		
-		if (typeof gameboy == "object" && gameboy != null) {
-			gameboy.initSound();
+		if (gameboy.core != null) {
+			gameboy.core.initSound();
 		}
 	});
 	
 	$("#enable_mono_sound").click(function () {
-		settings[setting_map[this.id]] = this.checked;
+		gameboy.settings[setting_map[this.id]] = this.checked;
 		
-		if (typeof gameboy == "object" && gameboy != null) {
-			gameboy.initSound();
+		if (gameboy != null) {
+			gameboy.core.initSound();
 		}
 	});
 	
 	$("#auto_frameskip").click(function () {
-		settings[setting_map[this.id]] = this.checked;
+		gameboy.settings[setting_map[this.id]] = this.checked;
 		
-		settings[4] = 0;	//Reset the frame skipping amount.
+		gameboy.settings[4] = 0;	//Reset the frame skipping amount.
 	});
 	
 	$("#enable_colorization").click(function () {
-		settings[setting_map[this.id]] = this.checked;
+		gameboy.settings[setting_map[this.id]] = this.checked;
 		
-		if (typeof gameboy == "object" && gameboy != null) {
-			gameboy.checkPaletteType();
+		if (gameboy.core != null) {
+			gameboy.core.checkPaletteType();
 		}
 	});
 	
 	$("#software_resizing").click(function () {
-		settings[21] = this.checked;
+		gameboy.settings[21] = this.checked;
 		
-		if (typeof gameboy == "object" && gameboy != null && !gameboy.canvasFallbackHappened) {
+		if (gameboy.core != null && !gameboy.core.canvasFallbackHappened) {
 			initNewCanvasSize();
 			gameboy.initLCD();
 		}
@@ -309,49 +311,51 @@ function registerGUIEvents() {
 	$(window).resize(onResizeOutput);
 }
 function onResizeOutput() {
-	if (typeof gameboy == "object" && gameboy != null && !gameboy.canvasFallbackHappened && settings[21]) {
+	if (gameboy.core != null && !gameboy.core.canvasFallbackHappened && gameboy.settings[21]) {
 		cout("Resizing canvas.", 0);
 		initNewCanvasSize();
-		gameboy.initLCD();
+		gameboy.core.initLCD();
 	}
 }
 function initNewCanvasSize() {
-	if (!settings[21]) {
-		gameboy.canvas.width = gameboy.width = 160;
-		gameboy.canvas.height = gameboy.height = 144;
+	if (!gameboy.settings[21]) {
+		gameboy.core.canvas.width = gameboy.core.width = 160;
+		gameboy.core.canvas.height = gameboy.core.height = 144;
 	}
 	else {
-		gameboy.canvas.width = gameboy.width = gameboy.canvas.clientWidth;
-		gameboy.canvas.height = gameboy.height = gameboy.canvas.clientHeight;
+		gameboy.core.canvas.width = gameboy.core.width = gameboy.canvas.clientWidth;
+		gameboy.core.canvas.height = gameboy.core.height = gameboy.canvas.clientHeight;
 	}
-	gameboy.pixelCount = gameboy.width * gameboy.height;
-	gameboy.rgbCount = gameboy.pixelCount * 4;
-	gameboy.widthRatio = 160 / gameboy.width;
-	gameboy.heightRatio = 144 / gameboy.height;
+	gameboy.core.pixelCount = gameboy.core.width * gameboy.core.height;
+	gameboy.core.rgbCount = gameboy.core.pixelCount * 4;
+	gameboy.core.widthRatio = 160 / gameboy.core.width;
+	gameboy.core.heightRatio = 144 / gameboy.core.height;
 }
 function initPlayer() {
-	if (typeof gameboy == "object" && gameboy != null && !gameboy.canvasFallbackHappened) {
+	if (gameboy.core != null && !gameboy.core.canvasFallbackHappened) {
 		initNewCanvasSize();
-		if (settings[21]) {
-			gameboy.initLCD();
+		if (gameboy.settings[21]) {
+			gameboy.core.initLCD();
 		}
 	}
 	$("#fullscreenContainer").hide();
 }
 function fullscreenPlayer() {
-	if (typeof gameboy == "object" && gameboy != null && !gameboy.canvasFallbackHappened) {
+	if (gameboy.core != null && !gameboy.core.canvasFallbackHappened) {
 		if (!inFullscreen) {
-			gameboy.canvas = document.getElementById("fullscreen");
+			gameboy.core.canvas = document.getElementById("fullscreen");
 			$("#fullscreenContainer").show();
+			$("body").scrollTop(0);
+			$("html").scrollTop(0);
 			$("body").css("overflow", "hidden");
 		}
 		else {
-			gameboy.canvas = document.getElementsByTagName("canvas")[0];
+			gameboy.core.canvas = document.getElementsByTagName("canvas")[0];
 			$("#fullscreenContainer").hide();
-			$("body").css("overflow", "default");
+			$("body").css("overflow", "auto");
 		}
 		initNewCanvasSize();
-		gameboy.initLCD();
+		gameboy.core.initLCD();
 		inFullscreen = !inFullscreen;
 	}
 	else {
@@ -385,7 +389,7 @@ function addSaveStateItem(filename) {
 				cout("Attempting to find a save state record with the name: \"" + this.firstChild.data + "\"", 0);
 				for (var romState in states) {
 					if (states[romState] == this.firstChild.data) {
-						openState(states[romState], document.getElementsByTagName("canvas")[0],  document.getElementById("canvasAltContainer"));
+						gameboy.open(states[romState], document.getElementsByTagName("canvas")[0],  document.getElementById("canvasAltContainer"));
 						initPlayer();
 					}
 				}

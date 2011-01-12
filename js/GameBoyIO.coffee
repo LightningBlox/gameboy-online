@@ -1,70 +1,87 @@
-# globals required (for use, not loading):
+# globals expected:
 # - GameBoyCore
 # - cout
 # - setValue
 # - findValue
 # - addSaveStateItem
-# - alert
-
+# 
 # Ideally as many of these as possible will be eliminated.
+# 
+# globals defined:
+# - GameBoyWithIO
+# - settings (aliasing property on instantiation)
+# - audioOutputEvent (aliasing method on instantiation)
 
-this.GameBoyWithIO = class GameBoyWithIO
+# bitmasks for GameBoyCore().stopEmulator:
+window.MASK_FRAME_OVER = 0x1
+window.MASK_STOPPED = 0x2
+
+formatError = (error) ->
+    "#{error.fileName}:#{error.lineNumber} #{error.message}"
+
+window.GameBoyWithIO = class GameBoyWithIO
     constructor: ->
+        @settings = @settings.slice() # clone own settings from default
+        @core = null
+        @audioIndex = 0
+        
+        # Though I made a class the core uses global variables that prevent this from actually
+        # being modular, so I create them from this instance when created
+        window.settings = @settings
+        window.audioOutputEvent = ((event) => @handleAudioOutput event)
     
     start: (canvas, canvasAlt, ROM) ->
         @clear()
-        @settings = @settings.slice() # clone own settings from default
-        @gameboy = new GameBoyCore canvas, canvasAlt, ROM
-        @gameboy.start()
+        @core = new GameBoyCore canvas, canvasAlt, ROM
+        @core.start()
         @run()
     
     debug: (s) -> cout s, 0
     warn: (s) -> cout s, 1
     error: (s) -> cout s, 2
     
-    continueCPU: ->
-        @gameboy.run()
+    continueCPU: -> @core.run()
     
     run: ->
-        if @gameboy?
-            if @gameboy.stopEmulator & 2 == 2
-                @gameboy.stopEmulator &= 1
-                @gameboy.lastIteration = new Date().getTime()
+        if @core?
+            if @core.stopEmulator & MASK_STOPPED
+                @core.stopEmulator &= MASK_FRAME_OVER
+                @core.lastIteration = new Date().getTime()
                 @debug "Starting the iterator."
-                @intervalId = setInterval continueCPU, @settings[20]
-            else if @gameboy.stopEmulator & 2 == 2
+                @intervalId = setInterval (=> @continueCPU()), @settings[20]
+            else if not (@core.stopEmulator & MASK_STOPPED)
                 @warn "GameBoyCore is already running."
         else
             @warn "GameBoyCore cannot be run before being initialized."
     
     pause: ->
-        if @gameboy?
-            @gameboy.stopEmulator & 2 == 0
+        if @core?
+            if not (@core.stopEmulator & MASK_STOPPED)
                 @clear()
-            else if @gameboy.stopEmulator & 2 == 2
+            else if @core.stopEmulator & MASK_STOPPED
                 @warn "GameBoyCore has already been paused."
         else
             @warn "GameBoyCore cannot be paused before being initialized."
     
     clear: ->
-        if @gameboy? and @gameboy.stopEmulator & 2 == 0
+        if @core? and not (@core.stopEmulator & MASK_STOPPED)
             clearInterval @intervalId
-            @gameboy.stopEmulator |= 2
+            @core.stopEmulator |= MASK_STOPPED
             @debug "The emulation has been cleared."
         else
             @warn "No emulation found to clear."
     
     save: ->
-        if gameboy?
+        if @core?
             try
                 stateSuffix = 0
                 
-                while findValue "#{@gameboy.name}_#{stateSuffix}"
-                    stateSuffix += 1
+                while findValue "#{@core.name}_#{stateSuffix}"
+                    stateSuffix++
                 
-                stateName = "#{@gameboy.name}_#{stateSuffix}"
+                stateName = "#{@core.name}_#{stateSuffix}"
                 
-                setValue stateName, @gameboy.saveState()
+                setValue stateName, @core.saveState()
                 
                 if not findValue("state_names")?
                     setValue "state_names", [stateName]
@@ -75,7 +92,7 @@ this.GameBoyWithIO = class GameBoyWithIO
                 
                 addSaveStateItem stateName
             catch error
-                @error "Could not save current emulation state: {#{error.message}}"
+                @error "Error saving current emulation state: #{formatError error}"
         else
             @warn "Uninitialized GameBoyCore has no state to save."
     
@@ -84,7 +101,90 @@ this.GameBoyWithIO = class GameBoyWithIO
             if findValue filename
                 @clear()
                 @debug "Attempting to run saved emulation state: #{filename}"
-                @gameboy = new GameBoyCore canvas, canvasAlt, ""
+                @core = new GameBoyCore canvas, canvasAlt, ""
+                @core.savedStateFileName = filename
+                @core.returnFromState findValue filename
+                @run()
+            else
+                @error "Could not find save state: #{filename}"
+        catch error
+            @error "Error loading emulation state: #{formatError error}"
+    
+    mapKey: (kb_key) ->
+        # maps a keyboard key to a gameboy key
+        # indicies: [Right, Left, Up, Down, A, B, Start, Select]
+        
+        for index in [0..@settings[3].length]
+            if @settings[3][index] == kb_key
+                return index
+        
+        return null
+    
+    # Note that these are all bound upon instantiation (-> instead of ->)
+    
+    handleKeyDown: (event) ->
+        if @core? and not(@core.stopEmulator & MASK_STOPPED)
+            gb_keycode = @mapKey event.keyCode
+            
+            if gb_keycode?
+                @core.JoyPadEvent gb_keycode, true
+                
+                try event.preventDefault()
+            else
+                @debug "Press of unmapped key ignored."
+        else
+            @debug "Key press ignored since the GameBoyCore is not running."
+    
+    handleKeyUp: (event) ->
+        if @core? and not(@core.stopEmulator & MASK_STOPPED)
+            gb_keycode = @mapKey event.keyCode
+            
+            if gb_keycode?
+                @core.JoyPadEvent gb_keycode, false
+                
+                try event.preventDefault()
+            else
+                @debug "Release of unmapped key ignored."
+        else
+            @debug "Key release ignored since the GameBoyCore is not running."
+    
+    handleTilt: (event) ->
+        # TODO, for games like Kirby's Tilt n Tumble
+    
+    handleAudioOutput: (event) ->
+        count = 0
+        buffer1 = event.outputBuffer.getChannelData 0
+        buffer2 = event.outputBuffer.getChannelData 1
+        
+        bufferLength = buffer1.length
+        
+        if @settings[0] and @core? and not (@core.stopEmulator & MASK_STOPPED) and @core.soundMasterEnabled
+            if @settings[1] # MONO
+                while count < bufferLength
+                    buffer2[count] = buffer1[count] = @core.audioSamples[@audioIndex++]
+                    
+                    if @audioIndex >= @core.numSamplesTotal
+                        @audioIndex = 0
+                    
+                    count++
+            else # STEREO
+                while count < bufferLength
+                    buffer1[count] = @core.audioSamples[@audioIndex++]
+                    
+                    if @audioIndex >= @core.numSamplesTotal
+                        @audioIndex = 0
+                    
+                    buffer2[count] = @core.audioSamples[@audioIndex++]
+                    
+                    if @audioIndex >= @core.numSamplesTotal
+                        @audioIndex = 0
+                    
+                    count++
+        else
+            @audioIndex = @core.audioIndex = 0
+            while count < @settings[18]
+                buffer2[count] = buffer1[count] = 0
+                count++
     
     settings: [ # default settings, cloned upon instantiation
         	true, 								# Turn on sound.
@@ -111,124 +211,3 @@ this.GameBoyWithIO = class GameBoyWithIO
         	false,								# Render nearest-neighbor scaling in javascript?
         	false								# Disallow typed arrays?
     ]
-
-function openState(filename, canvas, canvasAlt) {
-	try {
-		if (findValue(filename) != null) {
-			try {
-				clearLastEmulation();
-				cout("Attempting to run a saved emulation state.", 0);
-				gameboy = new GameBoyCore(canvas, canvasAlt, "");
-				gameboy.savedStateFileName = filename;
-				gameboy.returnFromState(findValue(filename));
-				run();
-			}
-			catch (error) {
-				alert(error.message + " file: " + error.fileName + " line: " + error.lineNumber);
-			}
-		}
-		else {
-			cout("Could not find the save state \"" + filename + "\".", 2);
-		}
-	}
-	catch (error) {
-		cout("Could not open the saved emulation state.", 2);
-	}
-}
-function matchKey(key) {	//Maps a keyboard key to a gameboy key.
-	//Order: Right, Left, Up, Down, A, B, Select, Start
-	for (var index = 0; index < settings[3].length; index++) {
-		if (settings[3][index] == key) {
-			return index;
-		}
-	}
-	cout("Keyboard key #" + key + " was pressed or released, but is not being utilized by the emulator.", 0);
-	return -1;
-}
-function GameBoyKeyDown(e) {
-	if (typeof gameboy == "object" && gameboy != null && (gameboy.stopEmulator & 2) == 0) {
-		var keycode = matchKey(e.keyCode);
-		if (keycode >= 0 && keycode < 8) {
-			gameboy.JoyPadEvent(keycode, true);
-			try {
-				e.preventDefault();
-			}
-			catch (error) { }
-		}
-		else {
-			cout("Keyboard key press ignored", 1);
-		}
-	}
-	else {
-		cout("Keyboard key press ignored, since the core is not running.", 1);
-	}
-}
-function GameBoyKeyUp(e) {
-	if (typeof gameboy == "object" && gameboy != null && (gameboy.stopEmulator & 2) == 0) {
-		var keycode = matchKey(e.keyCode);
-		if (keycode >= 0 && keycode < 8) {
-			gameboy.JoyPadEvent(keycode, false);
-			try {
-				e.preventDefault();
-			}
-			catch (error) { }
-		}
-		else {
-			cout("Keyboard key release ignored", 1);
-		}
-	}
-	else {
-		cout("Keyboard key release ignored, since the core is not running.", 1);
-	}
-}
-function GameBoyJoyStickSignalHandler(e) {
-	if (typeof gameboy == "object" && gameboy != null && (gameboy.stopEmulator & 2) == 0) {
-		//TODO: Add MBC support first for Kirby's Tilt n Tumble
-		try {
-			e.preventDefault();
-		}
-		catch (error) { }
-	}
-}
-
-//Audio API Event Handler:
-var audioIndex = 0;
-function audioOutputEvent(event) { // GameBoyCore expects this to be defined globally
-	var count = 0;
-	var buffer1 = event.outputBuffer.getChannelData(0);
-	var buffer2 = event.outputBuffer.getChannelData(1);
-	var bufferLength = buffer1.length;
-	if (settings[0] && typeof gameboy == "object" && gameboy != null && (gameboy.stopEmulator & 2) == 0 && gameboy.soundMasterEnabled) {
-		if (settings[1]) {
-			//MONO:
-			while (count < bufferLength) {
-				buffer2[count] = buffer1[count] = gameboy.audioSamples[audioIndex++];
-				if (audioIndex >= gameboy.numSamplesTotal) {
-					audioIndex = 0;
-				}
-				count++;
-			}
-		}
-		else {
-			//STEREO:
-			while (count < bufferLength) {
-				buffer1[count] = gameboy.audioSamples[audioIndex++];
-				if (audioIndex >= gameboy.numSamplesTotal) {
-					audioIndex = 0;
-				}
-				buffer2[count] = gameboy.audioSamples[audioIndex++];
-				if (audioIndex >= gameboy.numSamplesTotal) {
-					audioIndex = 0;
-				}
-				count++;
-			}
-		}
-	}
-	else {
-		audioIndex = gameboy.audioIndex = 0;
-		while (count < settings[18]) {
-			buffer2[count] = buffer1[count] = 0;
-			count++;
-		}
-	}
-}

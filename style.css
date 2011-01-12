@@ -141,29 +141,29 @@ h3 {
 }
 
 
-div#terminal > div#terminal_output > span.white {
+#terminal > #terminal_output > .debug {
 	color: rgb(255, 255, 255);
 }
 
-div#terminal > div#terminal_output > span.white:before {
+#terminal > #terminal_output > .debug:before {
 	content: "<DEBUG> ";
 	font-weight: bold;
 }
 
-div#terminal > div#terminal_output > span.yellow {
+#terminal > #terminal_output > .warning {
 	color: rgb(255, 255, 0);
 }
 
-div#terminal > div#terminal_output > span.yellow:before {
+#terminal > #terminal_output > .warning:before {
 	content: "<WARNING> ";
 	font-weight: bold;
 }
 
-div#terminal > div#terminal_output > span.red {
+#terminal > #terminal_output > .error {
 	color: rgb(0, 0, 255);
 }
 
-div#terminal > div#terminal_output > span.red:before {
+#terminal > #terminal_output > .error:before {
 	content: "<ERROR> ";
 	font-weight: bold;
 }
