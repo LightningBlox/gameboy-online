@@ -154,24 +154,21 @@
     };
     GameBoyWithIO.prototype.handleTilt = function(event) {};
     GameBoyWithIO.prototype.handleAudioOutput = function(event) {
-      var audioIndex, buffer1, buffer2, bufferLength, count, _results, _results2, _results3;
+      var buffer1, buffer2, bufferLength, count;
       count = 0;
       buffer1 = event.outputBuffer.getChannelData(0);
       buffer2 = event.outputBuffer.getChannelData(1);
       bufferLength = buffer1.length;
       if (this.settings[0] && (this.core != null) && !(this.core.stopEmulator & MASK_STOPPED) && this.core.soundMasterEnabled) {
         if (this.settings[1]) {
-          _results = [];
           while (count < bufferLength) {
             buffer2[count] = buffer1[count] = this.core.audioSamples[this.audioIndex++];
             if (this.audioIndex >= this.core.numSamplesTotal) {
               this.audioIndex = 0;
             }
-            _results.push(count++);
+            count++;
           }
-          return _results;
         } else {
-          _results2 = [];
           while (count < bufferLength) {
             buffer1[count] = this.core.audioSamples[this.audioIndex++];
             if (this.audioIndex >= this.core.numSamplesTotal) {
@@ -181,19 +178,17 @@
             if (this.audioIndex >= this.core.numSamplesTotal) {
               this.audioIndex = 0;
             }
-            _results2.push(count++);
+            count++;
           }
-          return _results2;
         }
       } else {
-        audioIndex = this.core.audioIndex = 0;
-        _results3 = [];
+        this.audioIndex = this.core.audioIndex = 0;
         while (count < this.settings[18]) {
-          buffer2[count] = buffer1[count] = 1;
-          _results3.push(count++);
+          buffer2[count] = buffer1[count] = 0;
+          count++;
         }
-        return _results3;
       }
+      return null;
     };
     GameBoyWithIO.prototype.settings = [true, false, false, [39, 37, 38, 40, 88, 90, 16, 13], 0, false, [16, 12], true, 29, false, false, 20, 10, 17826, 70000, 0x10, true, true, 512, false, 17, false, false];
     return GameBoyWithIO;

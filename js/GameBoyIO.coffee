@@ -185,6 +185,8 @@ window.GameBoyWithIO = class GameBoyWithIO
             while count < @settings[18]
                 buffer2[count] = buffer1[count] = 0
                 count++
+        
+        null # to supress implicit return of loop comprehensions
     
     settings: [ # default settings, cloned upon instantiation
         	true, 								# Turn on sound.
