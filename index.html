@@ -7,37 +7,47 @@
 		
 		<meta name="viewport" content="initial-scale=1.0;width=640;user-scalable=no;">
 		
-		<style>@import url("css/GameBoy.css");</style>
+		<style>@import url("https://lightningblox.github.io/gameboy-online/css/GameBoy.css");</style>
 		
 		<script>
 			DEBUG_MESSAGES = true;
 			DEBUG_WINDOWING = false;
 		</script>
-		<script src="js/other/windowStack.js"></script>
-		<script src="js/other/terminal.js"></script>
-		<script src="js/other/opacity.js"></script>
-		<script src="js/other/gui.js"></script>
-		<script src="js/other/BMPCanvas.js"></script>
-		<script src="js/other/base64.js"></script>
-		<script src="js/other/transportHandler.js"></script>
-		<script src="js/other/waveAudio.js"></script>
-		<script src="js/other/audioRunner.js"></script>
-		<script src="js/other/json2.js"></script>
-		<script src="js/GameBoyCore.js"></script>
-		<script src="js/GameBoyIO.js"></script>
+		<script src="https://lightningblox.github.io/gameboy-online/js/other/windowStack.js"></script>
+		<script src="https://lightningblox.github.io/gameboy-online/js/other/terminal.js"></script>
+		<script src="https://lightningblox.github.io/gameboy-online/js/other/opacity.js"></script>
+		<script src="https://lightningblox.github.io/gameboy-online/js/other/gui.js"></script>
+		<script src="https://lightningblox.github.io/gameboy-online/js/other/BMPCanvas.js"></script>
+		<script src="https://lightningblox.github.io/gameboy-online/js/other/base64.js"></script>
+		<script src="https://lightningblox.github.io/gameboy-online/js/other/transportHandler.js"></script>
+		<script src="https://lightningblox.github.io/gameboy-online/js/other/waveAudio.js"></script>
+		<script src="https://lightningblox.github.io/gameboy-online/js/other/audioRunner.js"></script>
+		<script src="https://lightningblox.github.io/gameboy-online/js/other/json2.js"></script>
+		<script src="https://lightningblox.github.io/gameboy-online/js/GameBoyCore.js"></script>
+		<script src="https://lightningblox.github.io/gameboy-online/js/GameBoyIO.js"></script>
+        <style>
+        #GameBoy_file_menu:hover {
+         background-color: black;
+         background-image: none;
+        }
+        li {
+         background-color: black !important;
+         background-image: none !important;
+         color: white !important;
+         border: 0px !important;
+        }
+        </style>
 	</head>
 	<body>
-		<div id="GameBoy" class="window">
-			<div class="menubar">
-				<span id="GameBoy_file_menu">File</span>
-				<span id="GameBoy_settings_menu">Settings</span>
-				<span id="GameBoy_view_menu">View</span>
-				<span id="GameBoy_about_menu">About</span>
+		<div id="GameBoy" class="window" style="background-color:black;width:100%;">
+			<div class="menubar" style="background-color:black !important; background-image:none;border:0px;background-image:none !important;">
+				<span id="GameBoy_file_menu" style="color:white;background-color:black !important;border:2px solid white;">FILE</span>
+				<span style="position:fixed;top:-9999999999999999999999px;" id="GameBoy_settings_menu"></span>
+				<span style="position:fixed;top:-9999999999999999999999px;" id="GameBoy_view_menu"></span>
+				<span style="position:fixed;top:-9999999999999999999999px;" id="GameBoy_about_menu"></span>
 			</div>
-			<div id="gfx">
+			<div id="gfx" style="background-color:dimgrey;background-image:none;">
 				<canvas></canvas>
-				<div id="canvasAltContainer"></div>
-				<span id="title">GameBoy</span> <span id="port_title">Online</span>
 			</div>
 		</div>
 		<div id="terminal" class="window">
@@ -132,18 +142,16 @@
 		</div>
 		<ul class="menu" id="GameBoy_file_popup">
 			<li>
-				Open As
+				Open...
 				<ul class="menu">
-					<li id="data_uri_clicker">Base 64 Encoding</li>
-					<li id="external_file_clicker">URL Address</li>
-					<li id="internal_file_clicker">Local File</li>
-					<li id="open_saved_clicker">Saved State
+					<li id="internal_file_clicker">Select File</li>
+					<li id="open_saved_clicker">Saved Files
 						<ul id="save_states" class="menu">
 						</ul>
 					</li>
 				</ul>
 			</li>
-			<li id="save_state_clicker">Save State</li>
+			<li id="save_state_clicker">Save</li>
 			<li id="restart_cpu_clicker">Restart</li>
 			<li id="run_cpu_clicker">Resume</li>
 			<li id="kill_cpu_clicker">Pause</li>
